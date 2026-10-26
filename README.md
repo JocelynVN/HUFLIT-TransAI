@@ -83,22 +83,58 @@ Hệ thống cung cấp sẵn các tài khoản mẫu cho 4 vai trò (có thể 
 
 ---
 
-## 5. Hướng dẫn Khởi chạy Nhanh
+## 5. Hướng dẫn Khởi chạy Toàn diện với Docker Compose (Khuyến nghị)
 
-### Bước 1: Khởi động Cơ sở Dữ liệu
+Toàn bộ hệ thống đã được **đóng gói trọn gói (All-In-One)** vào một file `docker-compose.yml` duy nhất gồm 4 dịch vụ:
+1. **`postgres`**: Cơ sở dữ liệu PostgreSQL 16 (Healthcheck kiểm tra sẵn sàng).
+2. **`redis`**: Bộ đệm và điều phối hàng đợi tác vụ BullMQ Redis 7.
+3. **`web`**: Nền tảng Next.js 14 Portal (tự động đợi DB, tự động chạy `prisma db push` và `prisma db:seed`, lắng nghe cổng `3001` hoặc cấu hình qua `WEB_PORT`).
+4. **`worker`**: Background Worker độc lập xử lý hàng đợi đánh giá bản dịch AI bất đồng bộ.
+
+### 🚀 Khởi chạy toàn bộ hệ thống chỉ với 1 câu lệnh duy nhất:
 ```bash
-docker compose up -d postgres
+docker compose up -d
 ```
 
-### Bước 2: Đồng bộ CSDL & Seed Dữ liệu
+Sau khi khởi chạy, truy cập ứng dụng ngay tại:
+👉 **`http://localhost:3001`** (hoặc `http://localhost:3000` tùy cấu hình `WEB_PORT`).
+
+Kiểm tra trạng thái các container:
 ```bash
+docker compose ps
+docker compose logs -f web
+```
+
+Dừng toàn bộ hệ thống:
+```bash
+docker compose down
+```
+
+---
+
+## 6. Khởi chạy Thủ công Dành cho Lập trình viên (Local Development)
+
+Nếu bạn muốn phát triển code cục bộ với Hot-reload:
+
+### Bước 1: Khởi động CSDL & Redis qua Docker
+```bash
+docker compose up -d postgres redis
+```
+
+### Bước 2: Cài đặt dependencies và đồng bộ schema
+```bash
+pnpm install
 pnpm prisma db push
 pnpm db:seed
 ```
 
-### Bước 3: Chạy ứng dụng
+### Bước 3: Chạy ứng dụng web và worker
 ```bash
+# Terminal 1: Chạy Web App
 pnpm dev
+
+# Terminal 2: Chạy Worker (tùy chọn)
+pnpm worker
 ```
 Truy cập tại: `http://localhost:3000`
 
@@ -109,7 +145,7 @@ pnpm test
 
 ---
 
-## 6. Cấu trúc Tài liệu Dự án
+## 7. Cấu trúc Tài liệu Dự án
 
 - `docs/architecture.md`: Chi tiết kiến trúc phân tầng, luồng xử lý và sơ đồ hệ thống.
 - `docs/api.md`: Toàn bộ đặc tả các endpoint API (Student, Teacher, Admin, Research).

@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: huflit_translation_postgres
+    container_name: huflit_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: huflit_user
@@ -11,15 +11,72 @@ services:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U huflit_user -d huflit_translation_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: huflit_translation_redis
+    container_name: huflit_redis
     restart: unless-stopped
     ports:
       - "6380:6379"
     volumes:
       - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: huflit_web_app
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3001}:3000"
+    environment:
+      DATABASE_URL: "postgresql://huflit_user:huflit_password@postgres:5432/huflit_translation_db?schema=public"
+      REDIS_URL: "redis://redis:6379"
+      AUTH_SECRET: "huflit-ai-assisted-translation-practice-secret-key-super-secure-2026"
+      NEXTAUTH_URL: "http://localhost:${WEB_PORT:-3001}"
+      AI_PROVIDER: "mock"
+      AI_MODEL_ID: "mock-mqm-evaluator-v1"
+      RUN_MIGRATIONS: "true"
+      NODE_ENV: "production"
+      PORT: 3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: huflit_ai_worker
+    restart: unless-stopped
+    command: ["pnpm", "worker"]
+    environment:
+      DATABASE_URL: "postgresql://huflit_user:huflit_password@postgres:5432/huflit_translation_db?schema=public"
+      REDIS_URL: "redis://redis:6379"
+      AUTH_SECRET: "huflit-ai-assisted-translation-practice-secret-key-super-secure-2026"
+      AI_PROVIDER: "mock"
+      AI_MODEL_ID: "mock-mqm-evaluator-v1"
+      RUN_MIGRATIONS: "false"
+      NODE_ENV: "production"
+    depends_on:
+      web:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   pgdata:

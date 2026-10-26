@@ -38,37 +38,44 @@ AI_DAILY_BUDGET_USD="50.0"
 
 NODE_ENV="production"
 PORT=3000
+WEB_PORT=3001
 ```
 
 ---
 
-## 3. Khởi động Cơ sở dữ liệu với Docker Compose
+## 3. Khởi chạy Trọn gói All-in-One với Docker Compose (Phương pháp Khuyến nghị)
 
-Khởi động PostgreSQL 16 container:
+Toàn bộ hệ thống được đóng gói hoàn chỉnh trong file [docker-compose.yml](file:///home/dinhvankhoa/Documents/Git/English/docker-compose.yml) bao gồm:
+- **`huflit_postgres`**: CSDL PostgreSQL 16 có healthcheck `pg_isready` (cổng host 5433).
+- **`huflit_redis`**: Message broker Redis 7 có healthcheck `redis-cli ping` (cổng host 6380).
+- **`huflit_web_app`**: Web Application Next.js 14 có script [docker-entrypoint.sh](file:///home/dinhvankhoa/Documents/Git/English/docker-entrypoint.sh) tự động đợi DB sẵn sàng, tự động thực thi `prisma db push` và `pnpm db:seed` trước khi khởi động web server (cổng host 3001 hoặc `${WEB_PORT}`).
+- **`huflit_ai_worker`**: Standalone AI Worker phụ trách xử lý hàng đợi BullMQ ngầm định.
+
+### Khởi động toàn bộ cụm:
 ```bash
-docker compose up -d postgres
+docker compose up -d
 ```
 
-Kiểm tra trạng thái container:
+### Xem nhật ký khởi động và trạng thái:
 ```bash
-docker ps
+# Xem trạng thái các container
+docker compose ps
+
+# Xem nhật ký khởi động, quá trình di chuyển CSDL và nạp seed
+docker compose logs -f web
+
+# Xem nhật ký xử lý của AI Worker
+docker compose logs -f worker
 ```
+
+Sau khi khởi chạy thành công, truy cập hệ thống tại:
+👉 **`http://localhost:3001`** (hoặc cổng được định nghĩa trong `WEB_PORT`).
 
 ---
 
-## 4. Đồng bộ CSDL & Dữ liệu Mẫu (Seeding)
+## 4. Dữ liệu Mẫu và Tài khoản Đăng nhập (Seeded Accounts)
 
-Đẩy schema Prisma vào PostgreSQL:
-```bash
-pnpm prisma db push
-```
-
-Chạy script tạo dữ liệu mẫu ban đầu:
-```bash
-pnpm db:seed
-```
-
-Tài khoản mẫu được tạo tự động:
+Hệ thống đã tự động kích hoạt tài khoản mẫu cho 4 vai trò chính:
 - **Sinh viên:** `student@huflit.edu.vn` / Mật khẩu: `student123`
 - **Giảng viên:** `teacher@huflit.edu.vn` / Mật khẩu: `teacher123`
 - **Nghiên cứu viên:** `researcher@huflit.edu.vn` / Mật khẩu: `researcher123`
@@ -76,22 +83,28 @@ Tài khoản mẫu được tạo tự động:
 
 ---
 
-## 5. Build và Chạy Ứng dụng
+## 5. Khởi chạy Cục bộ Dành cho Lập trình viên (Local Development)
 
-### Chế độ Development (Nhà phát triển):
+Nếu muốn phát triển tính năng mới với Next.js hot-reload:
+
+1. Chỉ khởi động PostgreSQL và Redis container:
+```bash
+docker compose up -d postgres redis
+```
+
+2. Đồng bộ CSDL và nạp dữ liệu:
+```bash
+pnpm prisma db push
+pnpm db:seed
+```
+
+3. Chạy giao diện phát triển:
 ```bash
 pnpm dev
 ```
 Truy cập tại: `http://localhost:3000`
 
-### Chế độ Production:
-```bash
-pnpm build
-pnpm start
-```
-
-### Chạy Standalone AI Evaluation Worker (Tùy chọn):
-Nếu sử dụng Redis và BullMQ để tách worker độc lập:
+4. Chạy background worker (tùy chọn):
 ```bash
 pnpm worker
 ```
