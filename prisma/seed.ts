@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-async function main() {
+export async function seedDatabase(db: PrismaClient = prisma) {
   console.log("🌱 Starting HUFLIT Translation Practice Tool database seeding...");
 
   // 1. Password hashing
@@ -13,7 +13,7 @@ async function main() {
   const adminPassword = await bcrypt.hash("admin123", 10);
 
   // 2. Demo Users for all 4 roles
-  const student = await prisma.user.upsert({
+  const student = await db.user.upsert({
     where: { email: "student@huflit.edu.vn" },
     update: {},
     create: {
@@ -27,7 +27,7 @@ async function main() {
     },
   });
 
-  const teacher = await prisma.user.upsert({
+  const teacher = await db.user.upsert({
     where: { email: "teacher@huflit.edu.vn" },
     update: {},
     create: {
@@ -41,7 +41,7 @@ async function main() {
     },
   });
 
-  const researcher = await prisma.user.upsert({
+  const researcher = await db.user.upsert({
     where: { email: "researcher@huflit.edu.vn" },
     update: {},
     create: {
@@ -55,7 +55,7 @@ async function main() {
     },
   });
 
-  const admin = await prisma.user.upsert({
+  const admin = await db.user.upsert({
     where: { email: "admin@huflit.edu.vn" },
     update: {},
     create: {
@@ -72,7 +72,7 @@ async function main() {
   console.log("✅ Users created for all 4 roles.");
 
   // 3. CEFR Levels
-  const cefrB1 = await prisma.cEFRLevel.upsert({
+  const cefrB1 = await db.cEFRLevel.upsert({
     where: { code: "B1" },
     update: {},
     create: {
@@ -82,7 +82,7 @@ async function main() {
     },
   });
 
-  const cefrB2 = await prisma.cEFRLevel.upsert({
+  const cefrB2 = await db.cEFRLevel.upsert({
     where: { code: "B2" },
     update: {},
     create: {
@@ -92,7 +92,7 @@ async function main() {
     },
   });
 
-  const cefrC1 = await prisma.cEFRLevel.upsert({
+  const cefrC1 = await db.cEFRLevel.upsert({
     where: { code: "C1" },
     update: {},
     create: {
@@ -117,7 +117,7 @@ async function main() {
 
   const genres: Record<string, any> = {};
   for (const g of genresData) {
-    genres[g.slug] = await prisma.genre.upsert({
+    genres[g.slug] = await db.genre.upsert({
       where: { slug: g.slug },
       update: {},
       create: g,
@@ -126,7 +126,7 @@ async function main() {
   console.log("✅ Text Genres seeded.");
 
   // 5. 8 Draft Text Selection Criteria (F19)
-  await prisma.criteriaConfig.upsert({
+  await db.criteriaConfig.upsert({
     where: { version: "v1.0" },
     update: {},
     create: {
@@ -147,7 +147,7 @@ async function main() {
   });
 
   // 6. Default Prompt Version (v1.0)
-  await prisma.promptVersion.upsert({
+  await db.promptVersion.upsert({
     where: { version: "v1.0" },
     update: {},
     create: {
@@ -436,34 +436,41 @@ Return strictly valid JSON according to the required schema.`,
     include: { groups: true },
   });
 
-  // Enroll student into study
-  await prisma.researchParticipant.create({
-    data: {
-      studyId: study.id,
-      userId: student.id,
-      pseudonymCode: "P-HUFLIT-001",
-      consentStatus: "CONSENTED",
-      consentVersion: "v1.0",
-      consentedAt: new Date(),
-      groupMemberships: {
-        create: [
-          {
-            groupId: study.groups[0].id, // Enrolled in AI group
-          },
-        ],
-      },
-    },
+  // Enroll student into study if not already enrolled
+  const existingParticipant = await prisma.researchParticipant.findFirst({
+    where: { studyId: study.id, userId: student.id },
   });
+  if (!existingParticipant) {
+    await prisma.researchParticipant.create({
+      data: {
+        studyId: study.id,
+        userId: student.id,
+        pseudonymCode: "P-HUFLIT-001",
+        consentStatus: "CONSENTED",
+        consentVersion: "v1.0",
+        consentedAt: new Date(),
+        groupMemberships: {
+          create: [
+            {
+              groupId: study.groups[0].id, // Enrolled in AI group
+            },
+          ],
+        },
+      },
+    });
+  }
 
   console.log("✅ Research Study and Participant seeded.");
   console.log("🎉 Database seeding completed successfully!");
 }
 
-main()
-  .catch((e) => {
-    console.error("❌ Seed failed:", e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+if (typeof process !== "undefined" && process.argv[1] && process.argv[1].includes("seed")) {
+  seedDatabase()
+    .catch((e) => {
+      console.error("❌ Seed failed:", e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

@@ -5,7 +5,7 @@
   "description": "Nền tảng thực hành biên dịch Anh–Việt và Việt–Anh tích hợp AI cho sinh viên HUFLIT",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && (prisma db push --skip-generate || true) && next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
