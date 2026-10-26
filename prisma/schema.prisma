@@ -1,0 +1,622 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  RESEARCHER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum TextStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum TaskStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ClipboardPolicy {
+  OFF
+  WARN
+  BLOCK_IN_EDITOR
+}
+
+enum AttemptStatus {
+  DRAFT
+  SUBMITTED
+  FEEDBACK_PENDING
+  FEEDBACK_READY
+  POST_EDITING
+  COMPLETED
+  FEEDBACK_FAILED
+}
+
+enum VersionKind {
+  ORIGINAL
+  POST_EDIT
+}
+
+enum FeedbackRunStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum Severity {
+  MINOR
+  MAJOR
+  CRITICAL
+  NEUTRAL
+}
+
+enum AnchorStatus {
+  ANCHORED
+  UNANCHORED
+}
+
+enum StudyStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum ConsentStatus {
+  PENDING
+  CONSENTED
+  WITHDRAWN
+}
+
+enum GroupCondition {
+  AI_ASSISTED
+  CONTROL
+  BLINDED
+}
+
+enum TestType {
+  PRE
+  POST
+}
+
+enum SurveyType {
+  SUS
+  CUSTOM
+}
+
+enum TMStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ConfigStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+// -------------------------------------------------------------
+// Identity & Access
+// -------------------------------------------------------------
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String
+  name         String
+  avatarUrl    String?
+  status       UserStatus  @default(ACTIVE)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  roles        UserRole[]
+  sessions     Session[]
+  attempts     TranslationAttempt[]
+  usageRecords AIUsageRecord[]
+  auditLogs    AuditLog[]
+  participants ResearchParticipant[]
+  sourceTexts  SourceText[]
+  tasks        TranslationTask[]
+  evaluations  HumanEvaluation[]
+
+  @@index([email])
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  userId    String
+  role      Role
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+// -------------------------------------------------------------
+// Learning Core: Source Texts, Tasks, CEFR, Genre
+// -------------------------------------------------------------
+
+model Genre {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  sourceTexts      SourceText[]
+  translationTasks TranslationTask[]
+}
+
+model CEFRLevel {
+  id          String   @id @default(uuid())
+  code        String   @unique // B1, B2, C1
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  translationTasks TranslationTask[]
+}
+
+model SourceText {
+  id                 String       @id @default(uuid())
+  title              String
+  body               String
+  sourceLanguage     String       // en, vi
+  genreId            String?
+  sourceReference    String?
+  licenseInformation String?
+  status             TextStatus   @default(DRAFT)
+  createdById        String
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  createdBy          User         @relation(fields: [createdById], references: [id])
+  genre              Genre?       @relation(fields: [genreId], references: [id])
+  versions           SourceTextVersion[]
+
+  @@index([status])
+  @@index([createdById])
+}
+
+model SourceTextVersion {
+  id            String      @id @default(uuid())
+  sourceTextId  String
+  versionNumber Int
+  body          String
+  createdAt     DateTime    @default(now())
+
+  sourceText    SourceText  @relation(fields: [sourceTextId], references: [id], onDelete: Cascade)
+  assessments   TextSelectionAssessment[]
+  tasks         TranslationTask[]
+
+  @@unique([sourceTextId, versionNumber])
+  @@index([sourceTextId])
+}
+
+model CriteriaConfig {
+  id          String         @id @default(uuid())
+  version     String         @unique
+  name        String
+  criteria    Json           // Array of 8 criteria with definitions
+  status      ConfigStatus   @default(ACTIVE)
+  createdAt   DateTime       @default(now())
+
+  assessments TextSelectionAssessment[]
+}
+
+model TextSelectionAssessment {
+  id                  String             @id @default(uuid())
+  sourceTextVersionId String
+  criteriaConfigId    String
+  scores              Json               // Scores per criterion
+  rationale           String?
+  assessedById        String
+  createdAt           DateTime           @default(now())
+
+  sourceTextVersion   SourceTextVersion  @relation(fields: [sourceTextVersionId], references: [id], onDelete: Cascade)
+  criteriaConfig      CriteriaConfig     @relation(fields: [criteriaConfigId], references: [id])
+
+  @@index([sourceTextVersionId])
+}
+
+model TranslationTask {
+  id                  String            @id @default(uuid())
+  sourceTextVersionId String
+  title               String
+  sourceLanguage      String            // en, vi
+  targetLanguage      String            // vi, en
+  cefrLevelId         String
+  genreId             String?
+  instructions        String?
+  clipboardPolicy     ClipboardPolicy   @default(WARN)
+  maxReevaluations    Int               @default(2)
+  status              TaskStatus        @default(DRAFT)
+  createdById         String
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  sourceTextVersion   SourceTextVersion @relation(fields: [sourceTextVersionId], references: [id])
+  cefrLevel           CEFRLevel         @relation(fields: [cefrLevelId], references: [id])
+  genre               Genre?            @relation(fields: [genreId], references: [id])
+  createdBy           User              @relation(fields: [createdById], references: [id])
+  attempts            TranslationAttempt[]
+  researchTests       ResearchTest[]
+
+  @@index([status])
+  @@index([cefrLevelId])
+}
+
+// -------------------------------------------------------------
+// Translation Practice & Versioning
+// -------------------------------------------------------------
+
+model TranslationAttempt {
+  id              String         @id @default(uuid())
+  userId          String
+  taskId          String
+  status          AttemptStatus  @default(DRAFT)
+  startedAt       DateTime       @default(now())
+  submittedAt     DateTime?
+  completedAt     DateTime?
+  durationSeconds Int            @default(0)
+  draftText       String?        // Autosave draft buffer
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task            TranslationTask @relation(fields: [taskId], references: [id])
+  versions        TranslationVersion[]
+
+  @@index([userId])
+  @@index([taskId])
+  @@index([status])
+}
+
+model TranslationVersion {
+  id          String         @id @default(uuid())
+  attemptId   String
+  versionNumber Int
+  kind        VersionKind    @default(ORIGINAL)
+  text        String
+  wordCount   Int            @default(0)
+  createdAt   DateTime       @default(now())
+
+  attempt     TranslationAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  feedbackRuns FeedbackRun[]
+  humanEvaluations HumanEvaluation[]
+  testAttempts ResearchTestAttempt[]
+
+  @@unique([attemptId, versionNumber])
+  @@index([attemptId])
+}
+
+// -------------------------------------------------------------
+// AI Feedback & MQM
+// -------------------------------------------------------------
+
+model PromptVersion {
+  id                String       @id @default(uuid())
+  name              String
+  version           String       @unique
+  systemInstruction String
+  developerContext  String?
+  status            ConfigStatus @default(DRAFT)
+  createdById       String?
+  activatedAt       DateTime?
+  createdAt         DateTime     @default(now())
+
+  feedbackRuns      FeedbackRun[]
+}
+
+model MQMRubricVersion {
+  id            String       @id @default(uuid())
+  name          String
+  version       String       @unique
+  taxonomy      Json         // MQM Categories, Subtypes, Definitions
+  scoringConfig Json         // Weights per severity & max penalty rules
+  status        ConfigStatus @default(DRAFT)
+  activatedAt   DateTime?
+  createdAt     DateTime     @default(now())
+
+  feedbackRuns  FeedbackRun[]
+  humanEvaluations HumanEvaluation[]
+}
+
+model FeedbackRun {
+  id                    String            @id @default(uuid())
+  translationVersionId  String
+  status                FeedbackRunStatus @default(PENDING)
+  provider              String            // mock, openai, gemini
+  modelId               String
+  promptVersionId       String?
+  rubricVersionId       String?
+  overallComment        String?
+  strengths             Json?             // Array of strings
+  learningTips          Json?             // Array of strings
+  suggestedTranslations Json?             // Array of strings
+  estimatedScore        Float?
+  tokenUsage            Int?
+  estimatedCost         Float?
+  errorMessage          String?
+  createdAt             DateTime          @default(now())
+  completedAt           DateTime?
+
+  translationVersion    TranslationVersion @relation(fields: [translationVersionId], references: [id], onDelete: Cascade)
+  promptVersion         PromptVersion?     @relation(fields: [promptVersionId], references: [id])
+  rubricVersion         MQMRubricVersion?  @relation(fields: [rubricVersionId], references: [id])
+  errorAnnotations      ErrorAnnotation[]
+  usageRecords          AIUsageRecord[]
+
+  @@index([translationVersionId])
+  @@index([status])
+}
+
+model ErrorAnnotation {
+  id              String       @id @default(uuid())
+  feedbackRunId   String
+  category        String       // ACCURACY, FLUENCY, TERMINOLOGY, STYLE
+  subtype         String       // MISTRANSLATION, OMISSION, GRAMMAR, etc.
+  severity        Severity     @default(MINOR)
+  targetQuote     String
+  occurrenceIndex Int          @default(0)
+  startOffset     Int?
+  endOffset       Int?
+  sourceEvidence  String?
+  explanation     String
+  suggestion      String?
+  anchorStatus    AnchorStatus @default(ANCHORED)
+  createdAt       DateTime     @default(now())
+
+  feedbackRun     FeedbackRun  @relation(fields: [feedbackRunId], references: [id], onDelete: Cascade)
+
+  @@index([feedbackRunId])
+  @@index([category])
+}
+
+// -------------------------------------------------------------
+// Translation Memory
+// -------------------------------------------------------------
+
+model TranslationMemoryEntry {
+  id             String    @id @default(uuid())
+  sourceText     String
+  targetText     String
+  sourceLanguage String
+  targetLanguage String
+  domain         String?
+  provenance     String?
+  approvedById   String?
+  approvedAt     DateTime?
+  status         TMStatus  @default(PENDING)
+  createdAt      DateTime  @default(now())
+
+  @@index([sourceLanguage, targetLanguage])
+  @@index([status])
+}
+
+// -------------------------------------------------------------
+// Research Module
+// -------------------------------------------------------------
+
+model ResearchStudy {
+  id              String               @id @default(uuid())
+  title           String
+  description     String?
+  protocolVersion String
+  status          StudyStatus          @default(DRAFT)
+  createdById     String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  participants    ResearchParticipant[]
+  groups          ResearchGroup[]
+  tests           ResearchTest[]
+  surveys         Survey[]
+
+  @@index([status])
+}
+
+model ResearchParticipant {
+  id             String                   @id @default(uuid())
+  studyId        String
+  userId         String
+  pseudonymCode  String
+  consentStatus  ConsentStatus            @default(PENDING)
+  consentVersion String?
+  consentedAt    DateTime?
+  createdAt      DateTime                 @default(now())
+
+  study          ResearchStudy            @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupMemberships ResearchGroupMembership[]
+  testAttempts   ResearchTestAttempt[]
+  surveyResponses SurveyResponse[]
+
+  @@unique([studyId, userId])
+  @@unique([studyId, pseudonymCode])
+  @@index([pseudonymCode])
+}
+
+model ResearchGroup {
+  id          String                 @id @default(uuid())
+  studyId     String
+  code        String
+  name        String
+  condition   GroupCondition         @default(AI_ASSISTED)
+
+  study       ResearchStudy          @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  memberships ResearchGroupMembership[]
+
+  @@unique([studyId, code])
+}
+
+model ResearchGroupMembership {
+  id            String              @id @default(uuid())
+  participantId String
+  groupId       String
+  assignedAt    DateTime            @default(now())
+
+  participant   ResearchParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  group         ResearchGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([participantId, groupId])
+}
+
+model ResearchTest {
+  id         String               @id @default(uuid())
+  studyId    String
+  testType   TestType
+  taskId     String
+  conditions Json?
+  status     String               @default("ACTIVE")
+  createdAt  DateTime             @default(now())
+
+  study      ResearchStudy        @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  task       TranslationTask      @relation(fields: [taskId], references: [id])
+  attempts   ResearchTestAttempt[]
+}
+
+model ResearchTestAttempt {
+  id                   String              @id @default(uuid())
+  researchTestId       String
+  participantId        String
+  translationVersionId String
+  startedAt            DateTime            @default(now())
+  submittedAt          DateTime?
+
+  test                 ResearchTest        @relation(fields: [researchTestId], references: [id], onDelete: Cascade)
+  participant          ResearchParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  translationVersion   TranslationVersion  @relation(fields: [translationVersionId], references: [id], onDelete: Cascade)
+}
+
+model HumanEvaluation {
+  id                   String              @id @default(uuid())
+  translationVersionId String
+  evaluatorId          String
+  rubricVersionId      String?
+  score                Float
+  notes                String?
+  evaluatedAt          DateTime            @default(now())
+
+  translationVersion   TranslationVersion  @relation(fields: [translationVersionId], references: [id], onDelete: Cascade)
+  evaluator            User                @relation(fields: [evaluatorId], references: [id])
+  rubricVersion        MQMRubricVersion?   @relation(fields: [rubricVersionId], references: [id])
+
+  @@index([translationVersionId])
+}
+
+model Survey {
+  id            String           @id @default(uuid())
+  studyId       String
+  type          SurveyType       @default(SUS)
+  title         String
+  schemaVersion String
+  questions     Json             // Questions list
+  createdAt     DateTime         @default(now())
+
+  study         ResearchStudy    @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  responses     SurveyResponse[]
+}
+
+model SurveyResponse {
+  id              String              @id @default(uuid())
+  surveyId        String
+  participantId   String
+  answers         Json                // Array of numeric answers
+  calculatedScore Float?              // 0-100 SUS score
+  submittedAt     DateTime            @default(now())
+
+  survey          Survey              @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  participant     ResearchParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@index([surveyId])
+  @@index([participantId])
+}
+
+// -------------------------------------------------------------
+// Operations, Audit & Usage
+// -------------------------------------------------------------
+
+model AIUsageRecord {
+  id               String       @id @default(uuid())
+  userId           String
+  feedbackRunId    String?
+  provider         String
+  modelId          String
+  promptTokens     Int          @default(0)
+  completionTokens Int          @default(0)
+  totalTokens      Int          @default(0)
+  estimatedCost    Float        @default(0.0)
+  createdAt        DateTime     @default(now())
+
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedbackRun      FeedbackRun? @relation(fields: [feedbackRunId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ExportJob {
+  id            String    @id @default(uuid())
+  requestedById String
+  exportType    String    // CORPUS, ATTEMPTS, SUS, COMPARISON
+  filters       Json?
+  status        String    @default("PENDING") // PENDING, COMPLETED, FAILED
+  downloadUrl   String?
+  createdAt     DateTime  @default(now())
+  expiresAt     DateTime?
+
+  @@index([requestedById])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorId      String?
+  action       String   // e.g. USER_LOGIN, PROMPT_ACTIVATE, EXPORT_RESEARCH
+  resourceType String
+  resourceId   String?
+  metadata     Json?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  actor        User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+}
