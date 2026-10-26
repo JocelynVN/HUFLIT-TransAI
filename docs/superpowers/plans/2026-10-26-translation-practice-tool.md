@@ -34,14 +34,14 @@
 ## Phase 1: Foundation & Infrastructure
 
 ### Task 1.1: Project Setup & Dependencies
-- [ ] Initialize Next.js TypeScript project with Tailwind CSS, Lucide icons, and core libraries.
-- [ ] Configure `tsconfig.json`, `tailwind.config.ts`, `postcss.config.mjs`, and `.gitignore`.
-- [ ] Install Prisma, Zod, bcryptjs, jsonwebtoken/jose, and test dependencies (vitest).
-- [ ] Create Docker Compose configuration for PostgreSQL 16 and Redis.
-- [ ] Verify local database startup via `docker compose up -d postgres`.
+- [x] Initialize Next.js TypeScript project with Tailwind CSS, Lucide icons, and core libraries.
+- [x] Configure `tsconfig.json`, `tailwind.config.ts`, `postcss.config.mjs`, and `.gitignore`.
+- [x] Install Prisma, Zod, bcryptjs, jsonwebtoken/jose, and test dependencies (vitest).
+- [x] Create Docker Compose configuration for PostgreSQL 16 and Redis.
+- [x] Verify local database startup via `docker compose up -d postgres`.
 
 ### Task 1.2: Database Modeling (Prisma Schema)
-- [ ] Create `prisma/schema.prisma` with all 29 entities:
+- [x] Create `prisma/schema.prisma` with all 29 entities:
   - Users, Roles, Sessions
   - Genres, CEFR levels
   - SourceTexts, SourceTextVersions, CriteriaConfigs, TextSelectionAssessments
@@ -50,16 +50,16 @@
   - TranslationMemoryEntries
   - ResearchStudies, Participants, Groups, Memberships, Tests, TestAttempts, HumanEvaluations, Surveys, SurveyResponses
   - AIUsageRecords, ExportJobs, AuditLogs
-- [ ] Run Prisma generate and push migration to PostgreSQL.
+- [x] Run Prisma generate and push migration to PostgreSQL.
 
 ### Task 1.3: Authentication & Role-Based Access Control (RBAC)
-- [ ] Implement password hashing and JWT/session management in `src/lib/auth.ts`.
-- [ ] Implement middleware and authorization guards in `src/lib/rbac.ts` enforcing permissions for `STUDENT`, `TEACHER`, `RESEARCHER`, `ADMIN`.
-- [ ] Build Auth API endpoints: `/api/auth/register`, `/api/auth/login`, `/api/auth/me`, `/api/auth/logout`.
-- [ ] Create public UI pages: Landing page (`/`), Login (`/login`), Register (`/register`).
+- [x] Implement password hashing and JWT/session management in `src/lib/auth.ts`.
+- [x] Implement middleware and authorization guards in `src/lib/rbac.ts` enforcing permissions for `STUDENT`, `TEACHER`, `RESEARCHER`, `ADMIN`.
+- [x] Build Auth API endpoints: `/api/auth/register`, `/api/auth/login`, `/api/auth/me`, `/api/auth/logout`.
+- [x] Create public UI pages: Landing page (`/`), Login (`/login`), Register (`/register`).
 
 ### Task 1.4: Database Seeding & Mock Data
-- [ ] Write `prisma/seed.ts` creating:
+- [x] Write `prisma/seed.ts` creating:
   - Default users for all 4 roles (student@huflit.edu.vn, teacher@huflit.edu.vn, researcher@huflit.edu.vn, admin@huflit.edu.vn)
   - Standard CEFR levels (B1, B2, C1)
   - Text genres (General, Academic, Business, Tourism, Media/News, Technical, Literary)
@@ -69,55 +69,55 @@
   - Sample bilingual source texts and translation tasks (En->Vi and Vi->En)
   - Sample Translation Memory entries
   - Sample Research Study and SUS Survey template
-- [ ] Run seed script and verify database contents.
+- [x] Run seed script and verify database contents.
 
 ---
 
 ## Phase 2: Learning Core & Translation Workspace
 
 ### Task 2.1: Source Text & Task Management (Teacher/Admin API & Service)
-- [ ] Implement Source Text CRUD service and API (`/api/teacher/source-texts`).
-- [ ] Implement Translation Task CRUD service and API (`/api/teacher/tasks`).
-- [ ] Implement versioning for Source Texts and immutability rules.
+- [x] Implement Source Text CRUD service and API (`/api/teacher/source-texts`).
+- [x] Implement Translation Task CRUD service and API (`/api/teacher/tasks`).
+- [x] Implement versioning for Source Texts and immutability rules.
 
 ### Task 2.2: Practice Bank & Selection (Student Portal)
-- [ ] Implement Practice Bank API (`/api/tasks`) with filtering by CEFR, language direction, genre, and search keywords.
-- [ ] Build Practice Bank UI (`/student/practice`) with filter bar, difficulty badges, and task preview cards.
-- [ ] Implement CEFR and Genre selector components.
+- [x] Implement Practice Bank API (`/api/tasks`) with filtering by CEFR, language direction, genre, and search keywords.
+- [x] Build Practice Bank UI (`/student/practice`) with filter bar, difficulty badges, and task preview cards.
+- [x] Implement CEFR and Genre selector components.
 
 ### Task 2.3: Translation Workspace & Editor (F06, F07, F08)
-- [ ] Create Attempt lifecycle service (`/api/attempts`): Start, Draft save, Submit.
-- [ ] Build Translation Workspace UI (`/student/practice/[taskId]`):
+- [x] Create Attempt lifecycle service (`/api/attempts`): Start, Draft save, Submit.
+- [x] Build Translation Workspace UI (`/student/practice/[taskId]`):
   - Left panel: Source text, CEFR, language direction, genre, instructions.
   - Right panel: Translation editor with live word and character counters, timer.
   - Autosave mechanism with visual status indicators (Saved, Saving, Offline).
   - Clipboard policy enforcement: `OFF`, `WARN`, `BLOCK_IN_EDITOR`.
   - Submit confirmation modal, preventing empty submissions and double-submits.
-- [ ] Ensure Attempt status transitions to `SUBMITTED` and original translation becomes immutable version 1.
+- [x] Ensure Attempt status transitions to `SUBMITTED` and original translation becomes immutable version 1.
 
 ### Task 2.4: Translation History & Student Dashboard (F02, F15)
-- [ ] Implement history endpoint (`/api/me/history`) and statistics aggregator (`/api/me/progress`).
-- [ ] Build Student Dashboard (`/student/dashboard`) with recent translations, statistics cards, and continue practice prompt.
-- [ ] Build Translation History UI (`/student/history`) with attempt details, timestamps, and filterable list.
+- [x] Implement history endpoint (`/api/me/history`) and statistics aggregator (`/api/me/progress`).
+- [x] Build Student Dashboard (`/student/dashboard`) with recent translations, statistics cards, and continue practice prompt.
+- [x] Build Translation History UI (`/student/history`) with attempt details, timestamps, and filterable list.
 
 ---
 
 ## Phase 3: AI Evaluation Engine, MQM & Post-Editing
 
 ### Task 3.1: AI Provider Architecture & Evaluation Worker
-- [ ] Define `AIProvider` interface with structured input/output contracts.
-- [ ] Implement `MockAIProvider` with deterministic, educational MQM evaluation for test/offline use.
-- [ ] Implement `LiveAIProvider` (Gemini / OpenAI compatible) supporting structured output and prompt injection defense.
-- [ ] Implement Async Evaluation Job Runner (`src/lib/queue/evaluationQueue.ts`) with retry and timeout logic.
+- [x] Define `AIProvider` interface with structured input/output contracts.
+- [x] Implement `MockAIProvider` with deterministic, educational MQM evaluation for test/offline use.
+- [x] Implement `LiveAIProvider` (Gemini / OpenAI compatible) supporting structured output and prompt injection defense.
+- [x] Implement Async Evaluation Job Runner (`src/lib/queue/evaluationQueue.ts`) with retry and timeout logic.
 
 ### Task 3.2: MQM Structured Output, Unicode Span Matching & Scoring Engine
-- [ ] Implement Zod schema for AI evaluation output validation (`overallComment`, `strengths`, `errors`, `suggestedTranslations`, `learningTips`).
-- [ ] Implement Unicode-safe span matching algorithm in `src/lib/spanMatcher.ts` resolving `targetQuote` and `occurrenceIndex` to character offsets with fallback unanchored status.
-- [ ] Implement configurable MQM scoring formula in `src/lib/scoring.ts`:
+- [x] Implement Zod schema for AI evaluation output validation (`overallComment`, `strengths`, `errors`, `suggestedTranslations`, `learningTips`).
+- [x] Implement Unicode-safe span matching algorithm in `src/lib/spanMatcher.ts` resolving `targetQuote` and `occurrenceIndex` to character offsets with fallback unanchored status.
+- [x] Implement configurable MQM scoring formula in `src/lib/scoring.ts`:
   `score = clamp(100 - 100 * weightedPenalty / max(sourceWordCount, 20), 0, 100)`.
 
 ### Task 3.3: MQM Feedback Display & Error Highlighting (F09, F10, F11, F12)
-- [ ] Build AI Feedback View (`/student/attempts/[attemptId]/feedback`):
+- [x] Build AI Feedback View (`/student/attempts/[attemptId]/feedback`):
   - Segmented feedback tabs: Overview, Errors list, Suggestions, Full Comparison.
   - Interactive MQM Highlighting on the student's translation text:
     - Red for Accuracy, Orange for Fluency, Purple for Terminology, Blue for Style.
@@ -127,8 +127,8 @@
   - Loading, error, and retry states for evaluation processing.
 
 ### Task 3.4: Post-editing Mode & Translation Comparison (F13, F14)
-- [ ] Implement Post-editing API (`/api/attempts/[id]/revisions`) to create versioned revisions (Kind: `POST_EDIT`).
-- [ ] Build Post-editing UI (`/student/attempts/[attemptId]/edit`):
+- [x] Implement Post-editing API (`/api/attempts/[id]/revisions`) to create versioned revisions (Kind: `POST_EDIT`).
+- [x] Build Post-editing UI (`/student/attempts/[attemptId]/edit`):
   - Read-only original translation side-by-side with interactive revision editor.
   - Integrated suggestions checklist where students can accept, tweak, or reject suggestions.
   - Visual Diff Viewer comparing original vs revised text.
@@ -136,7 +136,7 @@
   - Finish lesson action transitioning attempt to `COMPLETED`.
 
 ### Task 3.5: Progress Tracking & Analytics (F16)
-- [ ] Implement `/student/progress` page with:
+- [x] Implement `/student/progress` page with:
   - Error distribution breakdown chart (by MQM category and severity).
   - Score progression over time.
   - Revision improvement metrics (original vs revised length, error reductions).
@@ -146,25 +146,25 @@
 ## Phase 4: Teacher & Admin Portals
 
 ### Task 4.1: Admin Dashboard & System Overview (F17)
-- [ ] Implement `/admin/dashboard` showing total students, teachers, tasks, attempts, AI usage, error rates, and system status.
-- [ ] Implement Audit Logging system (`/api/admin/audit-logs`) tracking sensitive administrative actions.
+- [x] Implement `/admin/dashboard` showing total students, teachers, tasks, attempts, AI usage, error rates, and system status.
+- [x] Implement Audit Logging system (`/api/admin/audit-logs`) tracking sensitive administrative actions.
 
 ### Task 4.2: Text Selection Criteria & CEFR Management (F19, F20)
-- [ ] Build UI and API for 8 text selection criteria evaluation and versioning (`/admin/criteria`, `/teacher/source-texts/[id]/assess`).
-- [ ] Build CEFR level classification management (`/admin/levels`).
+- [x] Build UI and API for 8 text selection criteria evaluation and versioning (`/admin/criteria`, `/teacher/source-texts/[id]/assess`).
+- [x] Build CEFR level classification management (`/admin/levels`).
 
 ### Task 4.3: Prompt & Rubric Configuration (F22, F23)
-- [ ] Implement Prompt Management UI & API (`/admin/prompts`):
+- [x] Implement Prompt Management UI & API (`/admin/prompts`):
   - View prompt versions, create drafts, test against sample text, activate, and rollback.
-- [ ] Implement MQM Rubric Configuration UI & API (`/admin/mqm`):
+- [x] Implement MQM Rubric Configuration UI & API (`/admin/mqm`):
   - Manage categories, subtypes, severity weights, and rubric versions.
 
 ### Task 4.4: Student & Teacher Management (F24)
-- [ ] Build Student Management UI (`/teacher/students`, `/admin/users`):
+- [x] Build Student Management UI (`/teacher/students`, `/admin/users`):
   - User search, status toggling (active/suspended), progress inspection, and class/group assignment.
 
 ### Task 4.5: Translation Memory Management (F25)
-- [ ] Implement Translation Memory API & UI (`/admin/translation-memory`):
+- [x] Implement Translation Memory API & UI (`/admin/translation-memory`):
   - Search bilingual segments, approve/reject student translation candidates, inspect provenance and domain metadata.
 
 ---
@@ -172,30 +172,30 @@
 ## Phase 5: Research Portal & Scientific Tools
 
 ### Task 5.1: Research Study & Participant Setup (F26)
-- [ ] Implement Research Studies API & UI (`/research/studies`):
+- [x] Implement Research Studies API & UI (`/research/studies`):
   - Study protocol setup, participant enrollment, pseudonymous code assignment, informed consent tracking.
   - Experimental group setup (AI-Assisted vs Control group conditions).
 
 ### Task 5.2: Pre-test & Post-test Management (F26)
-- [ ] Build Pre-test/Post-test workflow (`/research/tests`):
+- [x] Build Pre-test/Post-test workflow (`/research/tests`):
   - Assign specific tasks as pre/post tests with locked conditions (e.g. AI disabled for baseline, enabled for training).
   - Human evaluation interface for blinded teacher scoring.
 
 ### Task 5.3: Translation Corpus & Comparative Analysis (F27, F28, F29)
-- [ ] Build Research Corpus Browser (`/research/corpus`):
+- [x] Build Research Corpus Browser (`/research/corpus`):
   - Aligned view of source text, original student translation, AI feedback annotations, and post-edited revisions.
   - Filter by CEFR, genre, and error types with pseudonymized exporter.
-- [ ] Build Comparative Analysis & Learning Analytics (`/research/comparison`, `/research/analytics`):
+  - Build Comparative Analysis & Learning Analytics (`/research/comparison`, `/research/analytics`):
   - Comparison of Pre vs Post scores, error density per 100 words, and experimental vs control group metrics.
 
 ### Task 5.4: SUS Questionnaire Module (F30)
-- [ ] Implement System Usability Scale (SUS) survey engine (`/student/surveys/[surveyId]`, `/research/sus`):
+- [x] Implement System Usability Scale (SUS) survey engine (`/student/surveys/[surveyId]`, `/research/sus`):
   - Standard 10-item SUS questionnaire with 1-5 Likert scale.
   - Standard scoring algorithm: odd items `(score - 1)`, even items `(5 - score)`, sum multiplied by `2.5`.
   - Aggregated SUS reporting with mean score, percentile, and usability grade.
 
 ### Task 5.5: Research Data Export Engine (F31)
-- [ ] Implement secure CSV/XLSX export service (`/api/research/exports`):
+- [x] Implement secure CSV/XLSX export service (`/api/research/exports`):
   - Export options: Attempts, Error Annotations, Pre/Post comparison, SUS responses.
   - UTF-8 with BOM for proper Vietnamese character rendering in Excel.
   - Formula injection defense (sanitizing `=`, `+`, `-`, `@` leading characters).
@@ -207,23 +207,23 @@
 ## Phase 6: Production Readiness, Testing & Documentation
 
 ### Task 6.1: Automated Unit & Integration Tests
-- [ ] Test scoring formula and edge cases in `tests/unit/scoring.test.ts`.
-- [ ] Test Unicode span matching algorithm in `tests/unit/spanMatcher.test.ts`.
-- [ ] Test SUS calculation in `tests/unit/sus.test.ts`.
-- [ ] Test CSV export sanitization in `tests/unit/exportSanitizer.test.ts`.
-- [ ] Test RBAC and authorization guards in `tests/unit/rbac.test.ts`.
-- [ ] Test AI Structured Output validation in `tests/unit/aiSchema.test.ts`.
+- [x] Test scoring formula and edge cases in `tests/unit/scoring.test.ts`.
+- [x] Test Unicode span matching algorithm in `tests/unit/spanMatcher.test.ts`.
+- [x] Test SUS calculation in `tests/unit/sus.test.ts`.
+- [x] Test CSV export sanitization in `tests/unit/exportSanitizer.test.ts`.
+- [x] Test RBAC and authorization guards in `tests/unit/rbac.test.ts`.
+- [x] Test AI Structured Output validation in `tests/unit/aiSchema.test.ts`.
 
 ### Task 6.2: Comprehensive Documentation
-- [ ] `README.md`: System overview, setup guide, demo credentials, architecture summary.
-- [ ] `docs/architecture.md`: System architecture, component diagrams, workflows.
-- [ ] `docs/api.md`: Complete API specification for Student, Teacher, Admin, and Research.
-- [ ] `docs/database.md`: Database ERD and entity dictionary.
-- [ ] `docs/research.md`: Research protocol, SUS methodology, and data export dictionary.
-- [ ] `docs/decisions.md`: Architectural decisions and items pending HUFLIT research committee confirmation.
-- [ ] `docs/deployment.md`: Docker and production deployment instructions.
+- [x] `README.md`: System overview, setup guide, demo credentials, architecture summary.
+- [x] `docs/architecture.md`: System architecture, component diagrams, workflows.
+- [x] `docs/api.md`: Complete API specification for Student, Teacher, Admin, and Research.
+- [x] `docs/database.md`: Database ERD and entity dictionary.
+- [x] `docs/research.md`: Research protocol, SUS methodology, and data export dictionary.
+- [x] `docs/decisions.md`: Architectural decisions and items pending HUFLIT research committee confirmation.
+- [x] `docs/deployment.md`: Docker and production deployment instructions.
 
 ### Task 6.3: Verification & Acceptance
-- [ ] Execute test suite with Vitest and verify all pass.
-- [ ] Run Next.js production build (`npm run build`) and verify zero type/lint errors.
-- [ ] Verify complete end-to-end flows for all 4 roles.
+- [x] Execute test suite with Vitest and verify all pass.
+- [x] Run Next.js production build (`npm run build`) and verify zero type/lint errors.
+- [x] Verify complete end-to-end flows for all 4 roles.
